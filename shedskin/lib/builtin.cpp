@@ -1819,6 +1819,28 @@ int __fmtpos2(str *fmt) {
     return -1;
 }
 
+int __fmtpos(std::string *fmt) {
+    int i = fmt->find('%');
+    if(i == -1)
+        return -1;
+    return fmt->find_first_not_of("#*-+ .0123456789hlL", i+1);
+}
+
+int __fmtpos2(std::string *fmt) {
+    unsigned int i = 0;
+    while((i = fmt->find('%', i)) != -1) {
+        if(i != fmt->size()-1) {
+            char nextchar = fmt->c_str()[i+1];
+            if(nextchar == '%')
+                ++i;
+            else if(nextchar == '(')
+                return i;
+        }
+        ++i;
+    }
+    return -1;
+}
+
 template<class T> str *do_asprintf(const char *fmt, T t, pyobj *a1, pyobj *a2) {
     char *d;
     int x;
@@ -1834,11 +1856,11 @@ template<class T> str *do_asprintf(const char *fmt, T t, pyobj *a1, pyobj *a2) {
     return r;
 }
 
-void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2) {
+void __modfill(str **fmt, pyobj *t, std::string **s, pyobj *a1, pyobj *a2) {
     char c;
     int i = (*fmt)->unit.find('%');
     int j = __fmtpos(*fmt);
-    *s = new str((*s)->unit + (*fmt)->unit.substr(0, i));
+    (*s)->append((*fmt)->unit.substr(0, i).c_str());
     str *add;
 
     c = (*fmt)->unit[j];
@@ -1866,7 +1888,7 @@ void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2) {
         if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
             add->unit += ".0";
     }
-    *s = (*s)->__add__(add);
+    (*s)->append(add->unit.c_str());
     *fmt = new str((*fmt)->unit.substr(j+1, (*fmt)->unit.size()-j-1));
 }
 
@@ -1876,9 +1898,9 @@ pyobj *modgetitem(list<pyobj *> *vals, int i) {
     return vals->__getitem__(i);
 }
 
-str *__mod4(const char fmts[], list<pyobj *> *vals) {
+std::string *__mod4(const char fmts[], list<pyobj *> *vals) {
     int i, j;
-    str *r = new str();
+    std::string *r = new std::string();
     str *fmt = new str(fmts);
     i = 0;
     while((j = __fmtpos(fmt)) != -1) {
@@ -1932,15 +1954,15 @@ str *__mod4(const char fmts[], list<pyobj *> *vals) {
     if(i!=len(vals))
         throw new TypeError(new str("not all arguments converted during string formatting"));
 
-    r->unit += fmt->unit;
+    r->append(fmt->unit.c_str());
     return r;
 }
 
-inline str *__mod4(str *fmts, list<pyobj *> *vals) {
+inline std::string *__mod4(str *fmts, list<pyobj *> *vals) {
     return __mod4(fmts->unit.c_str(), vals);
 }
 
-str *__mod5(list<pyobj *> *vals, str *sep) {
+std::string *__mod5(list<pyobj *> *vals, str *sep) {
     fmt_string.resize(0);
     for(int i=0;i<len(vals);i++) {
         pyobj *p = vals->__getitem__(i);
@@ -1954,8 +1976,7 @@ str *__mod5(list<pyobj *> *vals, str *sep) {
             fmt_string.append("%s ");
     }
     fmt_string.erase(fmt_string.size()-1);
-    str *s = __mod4(fmt_string.c_str(), vals);
-    return s;
+    return __mod4(fmt_string.c_str(), vals);
 }
 
 str *__modcd(str *fmt, list<str *> *names, ...) {
@@ -1980,7 +2001,7 @@ str *__modcd(str *fmt, list<str *> *names, ...) {
         fmt = (fmt->__slice__(2, 0, (pos+1), 0))->__add__(fmt->__slice__(1, (pos2+1), 0, 0));
     }
 
-    return __mod4(fmt, values);
+    return new str(__mod4(fmt, values)->c_str());
 }
 
 /* mod */
@@ -2036,7 +2057,7 @@ str *__modct(str *fmt, int n, ...) {
      for(int i=0; i<n; i++)
          vals->append(va_arg(args, pyobj *));
      va_end(args);
-     str *s = __mod4(fmt, vals);
+     str *s = new str(__mod4(fmt, vals)->c_str());
      return s;
 }
 
@@ -2094,7 +2115,7 @@ void print(int n, file *f, str *end, str *sep, ...) {
     for(int i=0; i<n; i++)
         __print_cache->append(va_arg(args, pyobj *));
     va_end(args);
-    str *s = __mod5(__print_cache, sep?sep:sp);
+    str *s = new str(__mod5(__print_cache, sep?sep:sp)->c_str());
     if(!end)
         end = nl;
     if(f) {
@@ -2112,7 +2133,7 @@ void print2(int comma, int n, ...) {
      for(int i=0; i<n; i++)
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
-     str *s = __mod5(__print_cache, sp);
+     str *s = new str(__mod5(__print_cache, sp)->c_str());
      if(len(s)) {
          if(print_space && (!isspace(print_lastchar) || print_lastchar==' ') && s->unit[0] != '\n')
              printf(" ");
@@ -2135,7 +2156,7 @@ void print2(file *f, int comma, int n, ...) {
      for(int i=0; i<n; i++)
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
-     str *s = __mod5(__print_cache, sp);
+     str *s = new str(__mod5(__print_cache, sp)->c_str());
      if(len(s)) {
          if(f->print_space && (!isspace(f->print_lastchar) || f->print_lastchar==' ') && s->unit[0] != '\n')
              f->putchar(' ');
