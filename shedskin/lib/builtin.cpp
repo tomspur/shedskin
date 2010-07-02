@@ -1856,40 +1856,40 @@ template<class T> str *do_asprintf(const char *fmt, T t, pyobj *a1, pyobj *a2) {
     return r;
 }
 
-void __modfill(str **fmt, pyobj *t, std::string **s, pyobj *a1, pyobj *a2) {
+void __modfill(std::string **fmts, pyobj *t, std::string **s, pyobj *a1, pyobj *a2) {
     char c;
-    int i = (*fmt)->unit.find('%');
-    int j = __fmtpos(*fmt);
-    (*s)->append((*fmt)->unit.substr(0, i).c_str());
+    int i = (*fmts)->find('%');
+    int j = __fmtpos(*fmts);
+    (*s)->append((*fmts)->substr(0, i));
     str *add;
 
-    c = (*fmt)->unit[j];
+    c = (*fmts)->at(j);
     if(c == 's' or c == 'r') {
         if(c == 's') add = __str(t);
         else add = repr(t);
-        (*fmt)->unit[j] = 's';
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), add->unit.c_str(), a1, a2);
+        (*fmts)->at(j) = 's';
+        add = do_asprintf((*fmts)->substr(i, j+1-i).c_str(), add->unit.c_str(), a1, a2);
     } else if(c  == 'c')
         add = __str(t);
     else if(c == '%')
         add = new str("%");
     else if(t->__class__ == cl_int_) {
 #ifdef __SS_LONG
-        add = do_asprintf(((*fmt)->unit.substr(i, j-i)+__GC_STRING("ll")+(*fmt)->unit[j]).c_str(), ((int_ *)t)->unit, a1, a2);
+        add = do_asprintf(((*fmts)->substr(i, j-i)+__GC_STRING("ll")+(*fmts)->at(j)).c_str(), ((int_ *)t)->unit, a1, a2);
 #else
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), ((int_ *)t)->unit, a1, a2);
+        add = do_asprintf((*fmts)->substr(i, j+1-i).c_str(), ((int_ *)t)->unit, a1, a2);
 #endif
     } else { /* cl_float_ */
         if(c == 'H') {
-            (*fmt)->unit.replace(j, 1, ".12g");
+            (*fmts)->replace(j, 1, ".12g");
             j += 3;
         }
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), ((float_ *)t)->unit, a1, a2);
+        add = do_asprintf((*fmts)->substr(i, j+1-i).c_str(), ((float_ *)t)->unit, a1, a2);
         if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
             add->unit += ".0";
     }
     (*s)->append(add->unit.c_str());
-    *fmt = new str((*fmt)->unit.substr(j+1, (*fmt)->unit.size()-j-1));
+    *fmts = new std::string((*fmts)->substr(j+1, (*fmts)->size()-j-1));
 }
 
 pyobj *modgetitem(list<pyobj *> *vals, int i) {
@@ -1901,12 +1901,12 @@ pyobj *modgetitem(list<pyobj *> *vals, int i) {
 std::string *__mod4(const char fmts[], list<pyobj *> *vals) {
     int i, j;
     std::string *r = new std::string();
-    str *fmt = new str(fmts);
+    std::string *fmt = new std::string(fmts);
     i = 0;
     while((j = __fmtpos(fmt)) != -1) {
         pyobj *p, *a1, *a2;
 
-        int asterisks = std::count(fmt->unit.begin(), fmt->unit.begin()+j, '*');
+        int asterisks = std::count(fmt->begin(), fmt->begin()+j, '*');
         a1 = a2 = NULL;
         if(asterisks==1) {
             a1 = modgetitem(vals, i++);
@@ -1915,15 +1915,15 @@ std::string *__mod4(const char fmts[], list<pyobj *> *vals) {
             a2 = modgetitem(vals, i++);
         }
 
-        char c = fmt->unit[j];
+        char c = fmt->at(j);
         if(c != '%')
             p = modgetitem(vals, i++);
-    
+
         switch(c) {
             case 'c':
                 __modfill(&fmt, mod_to_c2(p), &r, a1, a2);
                 break;
-            case 's': 
+            case 's':
             case 'r':
                 __modfill(&fmt, p, &r, a1, a2);
                 break;
@@ -1954,7 +1954,8 @@ std::string *__mod4(const char fmts[], list<pyobj *> *vals) {
     if(i!=len(vals))
         throw new TypeError(new str("not all arguments converted during string formatting"));
 
-    r->append(fmt->unit.c_str());
+    r->append(*fmt);
+    delete fmt;
     return r;
 }
 
@@ -2133,12 +2134,12 @@ void print2(int comma, int n, ...) {
      for(int i=0; i<n; i++)
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
-     str *s = new str(__mod5(__print_cache, sp)->c_str());
-     if(len(s)) {
-         if(print_space && (!isspace(print_lastchar) || print_lastchar==' ') && s->unit[0] != '\n')
+     const char *s = __mod5(__print_cache, sp)->c_str();
+     if(strlen(s)) {
+         if(print_space && (!isspace(print_lastchar) || print_lastchar==' ') && s[0] != '\n')
              printf(" ");
-         printf("%s", s->unit.c_str());
-         print_lastchar = s->unit[len(s)-1];
+         printf("%s", s);
+         print_lastchar = s[strlen(s)-1];
      }
      else if (comma)
          print_lastchar = ' ';
