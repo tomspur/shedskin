@@ -1876,10 +1876,10 @@ pyobj *modgetitem(list<pyobj *> *vals, int i) {
     return vals->__getitem__(i);
 }
 
-str *__mod4(str *fmts, list<pyobj *> *vals) {
+str *__mod4(const char fmts[], list<pyobj *> *vals) {
     int i, j;
     str *r = new str();
-    str *fmt = new str(fmts->unit);
+    str *fmt = new str(fmts);
     i = 0;
     while((j = __fmtpos(fmt)) != -1) {
         pyobj *p, *a1, *a2;
@@ -1936,6 +1936,10 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
     return r;
 }
 
+inline str *__mod4(str *fmts, list<pyobj *> *vals) {
+    return __mod4(fmts->unit.c_str(), vals);
+}
+
 str *__mod5(list<pyobj *> *vals, str *sep) {
     fmt_string.resize(0);
     for(int i=0;i<len(vals);i++) {
@@ -1950,7 +1954,7 @@ str *__mod5(list<pyobj *> *vals, str *sep) {
             fmt_string.append("%s ");
     }
     fmt_string.erase(fmt_string.size()-1);
-    str *s = __mod4(new str(fmt_string.c_str()), vals);
+    str *s = __mod4(fmt_string.c_str(), vals);
     return s;
 }
 
