@@ -12,15 +12,17 @@ namespace __shedskin__ {
 
 class_ *cl_class_, *cl_none, *cl_str_, *cl_int_, *cl_float_, *cl_complex, *cl_list, *cl_tuple, *cl_dict, *cl_set, *cl_object, *cl_rangeiter, *cl_xrange;
 
-str *sp, *nl, *__fmt_s, *__fmt_H, *__fmt_d;
+str *sp, *nl;
 __GC_STRING ws, __fmtchars;
 __GC_VECTOR(str *) __char_cache;
 
 __ss_bool True;
 __ss_bool False;
 
-list<str *> *__join_cache, *__mod5_cache;
+list<str *> *__join_cache;
 list<pyobj *> *__print_cache;
+
+std::string fmt_string;
 
 char __str_cache[4000];
 
@@ -56,9 +58,6 @@ void __init() {
     __fmtchars = "#*-+ .0123456789hlL";
     sp = new str(" ");
     nl = new str("\n");
-    __fmt_s = new str("%s");
-    __fmt_H = new str("%H");
-    __fmt_d = new str("%d");
 
     for(int i=0;i<256;i++) {
         char c = i;
@@ -67,7 +66,6 @@ void __init() {
 
     __join_cache = new list<str *>();
     __print_cache = new list<pyobj *>();
-    __mod5_cache = new list<str *>();
 
    for(int i=0; i<1000; i++) {
        __str_cache[4*i] = '0' + (i % 10);
@@ -1939,19 +1937,20 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
 }
 
 str *__mod5(list<pyobj *> *vals, str *sep) {
-    __mod5_cache->units.resize(0);
+    fmt_string.resize(0);
     for(int i=0;i<len(vals);i++) {
         pyobj *p = vals->__getitem__(i);
         if(p == NULL)
-            __mod5_cache->append(__fmt_s);
+            fmt_string.append("%s ");
         else if(p->__class__ == cl_float_)
-            __mod5_cache->append(__fmt_H);
+            fmt_string.append("%H ");
         else if(p->__class__== cl_int_)
-            __mod5_cache->append(__fmt_d);
+            fmt_string.append("%d ");
         else
-            __mod5_cache->append(__fmt_s);
+            fmt_string.append("%s ");
     }
-    str *s = __mod4(sep->join(__mod5_cache), vals);
+    fmt_string.erase(fmt_string.size()-1);
+    str *s = __mod4(new str(fmt_string.c_str()), vals);
     return s;
 }
 
