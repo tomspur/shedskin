@@ -1968,15 +1968,16 @@ std::string *__mod5(list<pyobj *> *vals, str *sep) {
     for(int i=0;i<len(vals);i++) {
         pyobj *p = vals->__getitem__(i);
         if(p == NULL)
-            fmt_string.append("%s ");
+            fmt_string.append("%s");
         else if(p->__class__ == cl_float_)
-            fmt_string.append("%H ");
+            fmt_string.append("%H");
         else if(p->__class__== cl_int_)
-            fmt_string.append("%d ");
+            fmt_string.append("%d");
         else
-            fmt_string.append("%s ");
+            fmt_string.append("%s");
+        fmt_string.append(sep->unit.c_str());
     }
-    fmt_string.erase(fmt_string.size()-1);
+    fmt_string.erase(fmt_string.size()-sep->unit.size());
     return __mod4(fmt_string.c_str(), vals);
 }
 
