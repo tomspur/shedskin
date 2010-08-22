@@ -2098,8 +2098,10 @@ void print(int n, file *f, str *end, str *sep, ...) {
         f->write(s);
         f->write(end);
     }
-    else 
-        printf("%s%s", s->unit.c_str(), end->unit.c_str());
+    else
+        std::cout << s->unit.c_str()
+                  << end->unit.c_str()
+                  << std::endl;
 }
 
 void print2(int comma, int n, ...) {
@@ -2112,14 +2114,14 @@ void print2(int comma, int n, ...) {
      str *s = __mod5(__print_cache, sp);
      if(len(s)) {
          if(print_space && (!isspace(print_lastchar) || print_lastchar==' ') && s->unit[0] != '\n')
-             printf(" ");
-         printf("%s", s->unit.c_str());
+             std::cout << " ";
+         std::cout << s->unit.c_str();
          print_lastchar = s->unit[len(s)-1];
      }
      else if (comma)
          print_lastchar = ' ';
      if(!comma) {
-         printf("\n");
+         std::cout << std::endl;
          print_lastchar = '\n';
      }
      print_space = comma;
