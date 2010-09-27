@@ -1938,7 +1938,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
     return r;
 }
 
-str *__mod5(list<pyobj *> *vals, str *sep) {
+const char *__mod5(list<pyobj *> *vals, str *sep) {
     __mod5_cache->units.resize(0);
     for(int i=0;i<len(vals);i++) {
         pyobj *p = vals->__getitem__(i);
@@ -1951,8 +1951,7 @@ str *__mod5(list<pyobj *> *vals, str *sep) {
         else
             __mod5_cache->append(__fmt_s);
     }
-    str *s = __mod4(sep->join(__mod5_cache), vals);
-    return s;
+    return __mod4(sep->join(__mod5_cache), vals)->unit.c_str();
 }
 
 str *__modcd(str *fmt, list<str *> *names, ...) {
@@ -2091,7 +2090,7 @@ void print(int n, file *f, str *end, str *sep, ...) {
     for(int i=0; i<n; i++)
         __print_cache->append(va_arg(args, pyobj *));
     va_end(args);
-    str *s = __mod5(__print_cache, sep?sep:sp);
+    str *s = new str(__mod5(__print_cache, sep?sep:sp));
     if(!end)
         end = nl;
     if(f) {
@@ -2109,12 +2108,13 @@ void print2(int comma, int n, ...) {
      for(int i=0; i<n; i++)
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
-     str *s = __mod5(__print_cache, sp);
-     if(len(s)) {
-         if(print_space && (!isspace(print_lastchar) || print_lastchar==' ') && s->unit[0] != '\n')
+     const char *s = __mod5(__print_cache, sp);
+     int str_len = strlen(s);
+     if(str_len) {
+         if(print_space && (!isspace(print_lastchar) || print_lastchar==' ') && s[0] != '\n')
              printf(" ");
-         printf("%s", s->unit.c_str());
-         print_lastchar = s->unit[len(s)-1];
+         printf("%s", s);
+         print_lastchar = s[str_len-1];
      }
      else if (comma)
          print_lastchar = ' ';
@@ -2132,7 +2132,7 @@ void print2(file *f, int comma, int n, ...) {
      for(int i=0; i<n; i++)
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
-     str *s = __mod5(__print_cache, sp);
+     str *s = new str(__mod5(__print_cache, sp));
      if(len(s)) {
          if(f->print_space && (!isspace(f->print_lastchar) || f->print_lastchar==' ') && s->unit[0] != '\n')
              f->putchar(' ');
