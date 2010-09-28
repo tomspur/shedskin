@@ -1116,15 +1116,15 @@ __ss_bool class_::__eq__(pyobj *c) {
 /* file methods */
 
 file::file() {
-    endoffile = print_space = 0;
-    print_lastchar = '\n';
+    print_opt.endoffile = print_opt.space = 0;
+    print_opt.lastchar = '\n';
     universal_mode = false;
 }
 
 file::file(FILE *g) {
     f = g;
-    endoffile = print_space = 0;
-    print_lastchar = '\n';
+    print_opt.endoffile = print_opt.space = 0;
+    print_opt.lastchar = '\n';
     universal_mode = false;
 }
 
@@ -1146,8 +1146,8 @@ file::file(str *name, str *flags) {
     this->mode = flags;
     if (!f)
         throw new IOError(__modct(new str("No such file or directory: '%s'"), 1, name));
-    endoffile = print_space = 0;
-    print_lastchar = '\n';
+    print_opt.endoffile = print_opt.space = 0;
+    print_opt.lastchar = '\n';
 }
 
 file *open(str *name, str *flags) {
@@ -1203,7 +1203,7 @@ void file::__check_closed() {
 void *file::seek(__ss_int i, __ss_int w) {
     __check_closed();
     fseek(f, i, w);
-    endoffile = 0; /* XXX add check */
+    print_opt.endoffile = 0; /* XXX add check */
     return NULL;
 }
 
@@ -1227,7 +1227,7 @@ str *file::readline(int n) {
     while((n==-1) || (i < n)) {
         int c = getchar();
         if(c == EOF) {
-            endoffile = 1;
+            print_opt.endoffile = 1;
             break;
         }
         r->unit += c;
@@ -1247,7 +1247,7 @@ str *file::read(int n) {
     while((n==-1) || (i < n)) {
         int c = getchar();
         if(c == EOF) {
-            endoffile = 1;
+            print_opt.endoffile = 1;
             break;
         }
         r->unit += c;
@@ -1260,9 +1260,9 @@ str *file::read(int n) {
 list<str *> *file::readlines() {
     __check_closed();
     list<str *> *lines = new list<str *>();
-    while(!endoffile) {
+    while(!print_opt.endoffile) {
         str *line = readline();
-        if(endoffile && !len(line))
+        if(print_opt.endoffile && !len(line))
             break;
         lines->append(line);
     }
@@ -2062,14 +2062,7 @@ float_ *___box(double d) {
 
 /* print .., */
 
-struct print_options {
-    char lastchar;
-    int space;
-    print_options() {
-        lastchar = '\n';
-        space = 0;
-    }
-} print_opt;
+print_options print_opt;
 
 void __ss_exit(int code) {
     throw new SystemExit(code);
@@ -2117,8 +2110,12 @@ inline char *get_char_to_print(file *is_file, const int &comma) {
     const char *c = __mod5(__print_cache, sp);
     int str_len = strlen(c);
     char *output = new char[str_len+2];
+    if (is_file) {
+        sprintf(output, "%s", c);
+        return output;
+    }
     if(str_len) {
-        if(print_opt.space && (!isspace(print_opt.lastchar) || print_opt.lastchar==' ') && c[0] != '\n') {
+        if(p_opt->space && (!isspace(p_opt->lastchar) || p_opt->lastchar==' ') && c[0] != '\n') {
             /* prefix with " " */
             sprintf(output, " %s", c);
         } else {
@@ -2157,18 +2154,18 @@ void print2(file *f, int comma, int n, ...) {
      va_end(args);
      str *s = new str(get_char_to_print(f, comma));
      if(len(s)) {
-         if(f->print_space && (!isspace(f->print_lastchar) || f->print_lastchar==' ') && s->unit[0] != '\n')
+         if(f->print_opt.space && (!isspace(f->print_opt.lastchar) || f->print_opt.lastchar==' ') && s->unit[0] != '\n')
              f->putchar(' ');
          f->write(s);
-         f->print_lastchar = s->unit[len(s)-1];
+         f->print_opt.lastchar = s->unit[len(s)-1];
      }
      else if (comma)
-         f->print_lastchar = ' ';
+         f->print_opt.lastchar = ' ';
      if(!comma) {
          f->write(nl);
-         f->print_lastchar = '\n';
+         f->print_opt.lastchar = '\n';
      }
-     f->print_space = comma;
+     f->print_opt.space = comma;
 }
 
 /* str, file iteration */
@@ -2194,10 +2191,10 @@ __iter<str *> *file::__iter__() {
 }
 
 str *file::next() {
-    if(endoffile)
+    if(print_opt.endoffile)
         throw new StopIteration();
     str *line = readline();
-    if(endoffile && !len(line))
+    if(print_opt.endoffile && !len(line))
         throw new StopIteration();
     return line;
 }
