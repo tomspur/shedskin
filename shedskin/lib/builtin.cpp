@@ -2074,7 +2074,7 @@ void __start(void (*initfunc)()) {
         initfunc();
     } catch (SystemExit *s) {
         if(s->message)
-            print2(0, 1, s->message);
+            print2(NULL, 0, 1, s->message);
         code = s->code;
     }
     if(print_opt.lastchar != '\n')
@@ -2133,27 +2133,19 @@ inline char *get_char_to_print(file *is_file, const int &comma) {
     return output;
 }
 
-void print2(int comma, int n, ...) {
-     __print_cache->units.resize(0);
-     va_list args;
-     va_start(args, n);
-     for(int i=0; i<n; i++)
-         __print_cache->append(va_arg(args, pyobj *));
-     va_end(args);
-    char *s = get_char_to_print(NULL, comma);
-    printf("%s", s);
-    delete s;
-}
-
 void print2(file *f, int comma, int n, ...) {
-     __print_cache->units.resize(0);
-     va_list args;
-     va_start(args, n);
-     for(int i=0; i<n; i++)
-         __print_cache->append(va_arg(args, pyobj *));
-     va_end(args);
-     str *s = new str(get_char_to_print(f, comma));
-     f->write(s);
+    __print_cache->units.resize(0);
+    va_list args;
+    va_start(args, n);
+    for(int i=0; i<n; i++)
+        __print_cache->append(va_arg(args, pyobj *));
+    va_end(args);
+    str *s = new str(get_char_to_print(f, comma));
+    if (f) {
+        f->write(s);
+    } else {
+        printf("%s", s->unit.c_str());
+    }
 }
 
 /* str, file iteration */
