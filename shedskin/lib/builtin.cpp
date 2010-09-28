@@ -2100,20 +2100,23 @@ void print(int n, file *f, str *end, str *sep, ...) {
         printf("%s%s", s->unit.c_str(), end->unit.c_str());
 }
 
-inline char *get_char_to_print(file *is_file, const int &comma) {
+void print2(file *f, int comma, int n, ...) {
+    __print_cache->units.resize(0);
+    va_list args;
+    va_start(args, n);
+    for(int i=0; i<n; i++)
+        __print_cache->append(va_arg(args, pyobj *));
+    va_end(args);
+
     print_options *p_opt;
-    if (is_file) {
-        p_opt = &is_file->print_opt;
+    if (f) {
+        p_opt = &f->print_opt;
     } else {
         p_opt = &print_opt;
     }
     const char *c = __mod5(__print_cache, sp);
     int str_len = strlen(c);
     char *output = new char[str_len+2];
-    if (is_file) {
-        sprintf(output, "%s", c);
-        return output;
-    }
     if(str_len) {
         if(p_opt->space && (!isspace(p_opt->lastchar) || p_opt->lastchar==' ') && c[0] != '\n') {
             /* prefix with " " */
@@ -2130,21 +2133,13 @@ inline char *get_char_to_print(file *is_file, const int &comma) {
         p_opt->lastchar = '\n';
     }
     p_opt->space = comma;
-    return output;
-}
 
-void print2(file *f, int comma, int n, ...) {
-    __print_cache->units.resize(0);
-    va_list args;
-    va_start(args, n);
-    for(int i=0; i<n; i++)
-        __print_cache->append(va_arg(args, pyobj *));
-    va_end(args);
-    str *s = new str(get_char_to_print(f, comma));
     if (f) {
-        f->write(s);
+        //TODO: file->write(char*)
+        //f->write(output);
+        f->write(new str(output));
     } else {
-        printf("%s", s->unit.c_str());
+        printf("%s", output);
     }
 }
 
