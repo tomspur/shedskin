@@ -2103,7 +2103,7 @@ void print(int n, file *f, str *end, str *sep, ...) {
 inline char *get_char_to_print(file *is_file, const int &comma) {
     print_options *p_opt;
     if (is_file) {
-        /* TODO */
+        p_opt = &is_file->print_opt;
     } else {
         p_opt = &print_opt;
     }
@@ -2153,19 +2153,7 @@ void print2(file *f, int comma, int n, ...) {
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
      str *s = new str(get_char_to_print(f, comma));
-     if(len(s)) {
-         if(f->print_opt.space && (!isspace(f->print_opt.lastchar) || f->print_opt.lastchar==' ') && s->unit[0] != '\n')
-             f->putchar(' ');
-         f->write(s);
-         f->print_opt.lastchar = s->unit[len(s)-1];
-     }
-     else if (comma)
-         f->print_opt.lastchar = ' ';
-     if(!comma) {
-         f->write(nl);
-         f->print_opt.lastchar = '\n';
-     }
-     f->print_opt.space = comma;
+     f->write(s);
 }
 
 /* str, file iteration */
