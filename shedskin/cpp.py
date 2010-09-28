@@ -2308,6 +2308,8 @@ class generateVisitor(ASTVisitor):
         self.start('print2(')
         if node.dest:
             self.visitm(node.dest, ', ', func)
+        else:
+            self.append('NULL, ')
         if print_space: self.append('1,')
         else: self.append('0,')
         self.append(str(len(node.nodes)))
