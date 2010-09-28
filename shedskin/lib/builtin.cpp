@@ -2101,6 +2101,11 @@ void print(int n, file *f, str *end, str *sep, ...) {
         printf("%s%s", s->unit.c_str(), end->unit.c_str());
 }
 
+inline const char *get_char_to_print(file *is_file, const int &comma) {
+     const char *c = __mod5(__print_cache, sp);
+     return c;
+}
+
 void print2(int comma, int n, ...) {
      __print_cache->units.resize(0);
      va_list args;
@@ -2108,7 +2113,7 @@ void print2(int comma, int n, ...) {
      for(int i=0; i<n; i++)
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
-     const char *s = __mod5(__print_cache, sp);
+     const char *s = get_char_to_print(NULL, comma);
      int str_len = strlen(s);
      if(str_len) {
          if(print_space && (!isspace(print_lastchar) || print_lastchar==' ') && s[0] != '\n')
@@ -2132,7 +2137,7 @@ void print2(file *f, int comma, int n, ...) {
      for(int i=0; i<n; i++)
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
-     str *s = new str(__mod5(__print_cache, sp));
+     str *s = new str(get_char_to_print(f, comma));
      if(len(s)) {
          if(f->print_space && (!isspace(f->print_lastchar) || f->print_lastchar==' ') && s->unit[0] != '\n')
              f->putchar(' ');
