@@ -2062,8 +2062,14 @@ float_ *___box(double d) {
 
 /* print .., */
 
-char print_lastchar = '\n';
-int print_space = 0;
+struct print_options {
+    char lastchar;
+    int space;
+    print_options() {
+        lastchar = '\n';
+        space = 0;
+    }
+} print_opt;
 
 void __ss_exit(int code) {
     throw new SystemExit(code);
@@ -2078,7 +2084,7 @@ void __start(void (*initfunc)()) {
             print2(0, 1, s->message);
         code = s->code;
     }
-    if(print_lastchar != '\n')
+    if(print_opt.lastchar != '\n')
         std::cout << '\n';
     std::exit(code);
 }
@@ -2101,9 +2107,33 @@ void print(int n, file *f, str *end, str *sep, ...) {
         printf("%s%s", s->unit.c_str(), end->unit.c_str());
 }
 
-inline const char *get_char_to_print(file *is_file, const int &comma) {
-     const char *c = __mod5(__print_cache, sp);
-     return c;
+inline char *get_char_to_print(file *is_file, const int &comma) {
+    print_options *p_opt;
+    if (is_file) {
+        /* TODO */
+    } else {
+        p_opt = &print_opt;
+    }
+    const char *c = __mod5(__print_cache, sp);
+    int str_len = strlen(c);
+    char *output = new char[str_len+2];
+    if(str_len) {
+        if(print_opt.space && (!isspace(print_opt.lastchar) || print_opt.lastchar==' ') && c[0] != '\n') {
+            /* prefix with " " */
+            sprintf(output, " %s", c);
+        } else {
+            sprintf(output, "%s", c);
+        }
+        p_opt->lastchar = c[str_len-1];
+    } else if (comma) {
+        p_opt->lastchar = ' ';
+    }
+    if (!comma) {
+        sprintf (output, "%s\n", output);
+        p_opt->lastchar = '\n';
+    }
+    p_opt->space = comma;
+    return output;
 }
 
 void print2(int comma, int n, ...) {
@@ -2113,21 +2143,9 @@ void print2(int comma, int n, ...) {
      for(int i=0; i<n; i++)
          __print_cache->append(va_arg(args, pyobj *));
      va_end(args);
-     const char *s = get_char_to_print(NULL, comma);
-     int str_len = strlen(s);
-     if(str_len) {
-         if(print_space && (!isspace(print_lastchar) || print_lastchar==' ') && s[0] != '\n')
-             printf(" ");
-         printf("%s", s);
-         print_lastchar = s[str_len-1];
-     }
-     else if (comma)
-         print_lastchar = ' ';
-     if(!comma) {
-         printf("\n");
-         print_lastchar = '\n';
-     }
-     print_space = comma;
+    char *s = get_char_to_print(NULL, comma);
+    printf("%s", s);
+    delete s;
 }
 
 void print2(file *f, int comma, int n, ...) {
