@@ -2134,6 +2134,11 @@ void print2(file *f, int comma, int n, ...) {
     }
     p_opt->space = comma;
 
+    if (!n) {
+        printf("\n");
+        return;
+    }
+
     if (f) {
         //TODO: file->write(char*)
         //f->write(output);
