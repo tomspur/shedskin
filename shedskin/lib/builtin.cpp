@@ -1880,6 +1880,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         int i_fmtpos = __fmtpos(fmt);
         int i_pos = fmt->unit.find('%');
         str *add;
+        char *c_add;
         pyobj *t;
         switch(c) {
             case 'c':
@@ -1893,8 +1894,16 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 } else {
                     add = repr(p);
                 }
-                add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), add->unit.c_str(), a1, a2);
-                r = r->__add__(add);
+                if (asterisks == 2)
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)), add->unit.c_str());
+                else if (asterisks == 1)
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int)(((int_ *)a1)->unit)), add->unit.c_str());
+                else
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), add->unit.c_str());
+
+                //TODO avoid the next string
+                r = r->__add__(new str(c_add));
+                delete c_add;
                 fmt->unit[j] = 's';
                 break;
             case 'd':
@@ -1906,27 +1915,36 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 t = mod_to_int(p);
 #ifdef __SS_LONG
                 add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)+__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(), ((int_ *)t)->unit, a1, a2);
+                r = r->__add__(add);
 #else
                 add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int_ *)t)->unit, a1, a2);
-#endif
                 r = r->__add__(add);
+#endif
                 break;
+            case 'H':
+                fmt->unit.replace(i_fmtpos, 1, ".12g");
+                i_fmtpos += 3;
             case 'e':
             case 'E':
             case 'f':
             case 'F':
             case 'g':
             case 'G':
-            case 'H':
                 t = mod_to_float(p);
-                if(c == 'H') {
-                    fmt->unit.replace(j, 1, ".12g");
-                    j += 3;
-                }
-                add = do_asprintf(fmt->unit.substr(i_pos, j+1-i_pos).c_str(), ((float_ *)t)->unit, a1, a2);
+                if (asterisks == 2)
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)), ((float_ *)t)->unit);
+                else if (asterisks == 1)
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int)(((int_ *)a1)->unit)), ((float_ *)t)->unit);
+                else
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((float_ *)t)->unit);
+                //TODO avoid this string
+                add = new str(c_add);
+                //r = r->__add__(c_add);
+                //r = r->__add__((char *)".0");
                 if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
                     add->unit += ".0";
                 r = r->__add__(add);
+                delete c_add;
                 break;
             case '%':
                 r = r->__add__((char *)"%");
