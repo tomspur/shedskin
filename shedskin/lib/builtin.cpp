@@ -1846,30 +1846,6 @@ template<class T> str *do_asprintf(const char *fmt, T t, pyobj *a1, pyobj *a2) {
     return r;
 }
 
-void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2, int &j) {
-    char c;
-    int i = (*fmt)->unit.find('%');
-    str *add;
-
-    c = (*fmt)->unit[j];
-    if(t->__class__ == cl_int_) {
-#ifdef __SS_LONG
-        add = do_asprintf(((*fmt)->unit.substr(i, j-i)+__GC_STRING("ll")+(*fmt)->unit[j]).c_str(), ((int_ *)t)->unit, a1, a2);
-#else
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), ((int_ *)t)->unit, a1, a2);
-#endif
-    } else { /* cl_float_ */
-        if(c == 'H') {
-            (*fmt)->unit.replace(j, 1, ".12g");
-            j += 3;
-        }
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), ((float_ *)t)->unit, a1, a2);
-        if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
-            add->unit += ".0";
-    }
-    *s = (*s)->__add__(add);
-}
-
 pyobj *modgetitem(list<pyobj *> *vals, int i) {
     if(i==len(vals))
         throw new TypeError(new str("not enough arguments for format string"));
@@ -1903,6 +1879,8 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         //std::cout << "rstest " << rs << " , " << r->unit.c_str() << std::endl;
         int i_fmtpos = __fmtpos(fmt);
         int i_pos = fmt->unit.find('%');
+        str *add;
+        pyobj *t;
         switch(c) {
             case 'c':
                 r = r->__add__(__str(mod_to_c2(p)));
@@ -1910,7 +1888,6 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 break;
             case 's':
             case 'r':
-                str *add;
                 if(c == 's') {
                     add = __str(p);
                 } else {
@@ -1926,7 +1903,13 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'u':
             case 'x':
             case 'X':
-                __modfill(&fmt, mod_to_int(p), &r, a1, a2, i_fmtpos);
+                t = mod_to_int(p);
+#ifdef __SS_LONG
+                add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)+__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(), ((int_ *)t)->unit, a1, a2);
+#else
+                add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int_ *)t)->unit, a1, a2);
+#endif
+                r = r->__add__(add);
                 break;
             case 'e':
             case 'E':
@@ -1935,7 +1918,15 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'g':
             case 'G':
             case 'H':
-                __modfill(&fmt, mod_to_float(p), &r, a1, a2, i_fmtpos);
+                t = mod_to_float(p);
+                if(c == 'H') {
+                    fmt->unit.replace(j, 1, ".12g");
+                    j += 3;
+                }
+                add = do_asprintf(fmt->unit.substr(i_pos, j+1-i_pos).c_str(), ((float_ *)t)->unit, a1, a2);
+                if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
+                    add->unit += ".0";
+                r = r->__add__(add);
                 break;
             case '%':
                 r = r->__add__((char *)"%");
