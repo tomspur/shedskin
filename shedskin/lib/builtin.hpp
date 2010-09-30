@@ -329,7 +329,7 @@ public:
     list<str *> *split(str *sep=0, int maxsplit=-1);
     __ss_bool __eq__(pyobj *s);
     str *__add__(str *b);
-    str *__add__(char *b);
+    str *__add__(const char *b);
 
     str *__join(pyseq<str *> *l, bool only_ones, int total);
     template<class U> str *join(U *);
