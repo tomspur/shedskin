@@ -838,6 +838,16 @@ str *str::__add__(str *b) {
 
     return s;
 }
+
+str *str::__add__(char *b) {
+    char *buffer = new char[unit.size() + strlen(b)];
+    sprintf(buffer, "%s%s", unit.c_str(), b);
+    str *s = new str(b);
+    delete buffer;
+
+    return s;
+}
+
 str *str::__iadd__(str *b) {
     return __add__(b);
 }
@@ -1836,11 +1846,9 @@ template<class T> str *do_asprintf(const char *fmt, T t, pyobj *a1, pyobj *a2) {
     return r;
 }
 
-void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2) {
+void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2, int &j) {
     char c;
     int i = (*fmt)->unit.find('%');
-    int j = __fmtpos(*fmt);
-    *s = new str((*s)->unit + (*fmt)->unit.substr(0, i));
     str *add;
 
     c = (*fmt)->unit[j];
@@ -1849,11 +1857,7 @@ void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2) {
         else add = repr(t);
         (*fmt)->unit[j] = 's';
         add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), add->unit.c_str(), a1, a2);
-    } else if(c  == 'c')
-        add = __str(t);
-    else if(c == '%')
-        add = new str("%");
-    else if(t->__class__ == cl_int_) {
+    } else if(t->__class__ == cl_int_) {
 #ifdef __SS_LONG
         add = do_asprintf(((*fmt)->unit.substr(i, j-i)+__GC_STRING("ll")+(*fmt)->unit[j]).c_str(), ((int_ *)t)->unit, a1, a2);
 #else
@@ -1869,7 +1873,6 @@ void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2) {
             add->unit += ".0";
     }
     *s = (*s)->__add__(add);
-    *fmt = new str((*fmt)->unit.substr(j+1, (*fmt)->unit.size()-j-1));
 }
 
 pyobj *modgetitem(list<pyobj *> *vals, int i) {
@@ -1898,14 +1901,16 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         char c = fmt->unit[j];
         if(c != '%')
             p = modgetitem(vals, i++);
-    
+
+        r = new str(r->unit + fmt->unit.substr(0, fmt->unit.find('%')));
+        int i_fmtpos = __fmtpos(fmt);
         switch(c) {
             case 'c':
-                __modfill(&fmt, mod_to_c2(p), &r, a1, a2);
+                r = r->__add__(__str(mod_to_c2(p)));
                 break;
-            case 's': 
+            case 's':
             case 'r':
-                __modfill(&fmt, p, &r, a1, a2);
+                __modfill(&fmt, p, &r, a1, a2, i_fmtpos);
                 break;
             case 'd':
             case 'i':
@@ -1913,7 +1918,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'u':
             case 'x':
             case 'X':
-                __modfill(&fmt, mod_to_int(p), &r, a1, a2);
+                __modfill(&fmt, mod_to_int(p), &r, a1, a2, i_fmtpos);
                 break;
             case 'e':
             case 'E':
@@ -1922,14 +1927,15 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'g':
             case 'G':
             case 'H':
-                __modfill(&fmt, mod_to_float(p), &r, a1, a2);
+                __modfill(&fmt, mod_to_float(p), &r, a1, a2, i_fmtpos);
                 break;
             case '%':
-                __modfill(&fmt, NULL, &r, a1, a2);
+                r = r->__add__((char *)"%");
                 break;
             default:
                 throw new ValueError(new str("unsupported format character"));
         }
+        fmt = new str(fmt->unit.substr(i_fmtpos+1, fmt->unit.size()-i_fmtpos-1));
     }
     if(i!=len(vals))
         throw new TypeError(new str("not all arguments converted during string formatting"));
