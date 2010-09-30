@@ -839,7 +839,7 @@ str *str::__add__(str *b) {
     return s;
 }
 
-str *str::__add__(char *b) {
+str *str::__add__(const char *b) {
     char *buffer = new char[unit.size() + strlen(b)];
     sprintf(buffer, "%s%s", unit.c_str(), b);
     str *s = new str(b);
@@ -1852,12 +1852,7 @@ void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2, int &j) {
     str *add;
 
     c = (*fmt)->unit[j];
-    if(c == 's' or c == 'r') {
-        if(c == 's') add = __str(t);
-        else add = repr(t);
-        (*fmt)->unit[j] = 's';
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), add->unit.c_str(), a1, a2);
-    } else if(t->__class__ == cl_int_) {
+    if(t->__class__ == cl_int_) {
 #ifdef __SS_LONG
         add = do_asprintf(((*fmt)->unit.substr(i, j-i)+__GC_STRING("ll")+(*fmt)->unit[j]).c_str(), ((int_ *)t)->unit, a1, a2);
 #else
@@ -1884,6 +1879,7 @@ pyobj *modgetitem(list<pyobj *> *vals, int i) {
 str *__mod4(str *fmts, list<pyobj *> *vals) {
     int i, j;
     str *r = new str();
+    //std::string rs = std::string("");
     str *fmt = new str(fmts->unit);
     i = 0;
     while((j = __fmtpos(fmt)) != -1) {
@@ -1903,14 +1899,26 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             p = modgetitem(vals, i++);
 
         r = new str(r->unit + fmt->unit.substr(0, fmt->unit.find('%')));
+        //rs.append(fmt->unit.substr(0, fmt->unit.find('%')).c_str());
+        //std::cout << "rstest " << rs << " , " << r->unit.c_str() << std::endl;
         int i_fmtpos = __fmtpos(fmt);
+        int i_pos = fmt->unit.find('%');
         switch(c) {
             case 'c':
                 r = r->__add__(__str(mod_to_c2(p)));
+                //rs.append(mod_to_c2(p)->unit.c_str());
                 break;
             case 's':
             case 'r':
-                __modfill(&fmt, p, &r, a1, a2, i_fmtpos);
+                str *add;
+                if(c == 's') {
+                    add = __str(p);
+                } else {
+                    add = repr(p);
+                }
+                add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), add->unit.c_str(), a1, a2);
+                r = r->__add__(add);
+                fmt->unit[j] = 's';
                 break;
             case 'd':
             case 'i':
@@ -1931,6 +1939,8 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 break;
             case '%':
                 r = r->__add__((char *)"%");
+                //rs.append((char *)"%");
+                //std::cout << "rstest% " << rs << " , " << r->unit.c_str() << std::endl;
                 break;
             default:
                 throw new ValueError(new str("unsupported format character"));
@@ -1941,7 +1951,10 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         throw new TypeError(new str("not all arguments converted during string formatting"));
 
     r->unit += fmt->unit;
+    //rs.append(fmt->unit.c_str());
+    //std::cout << "rs " << rs << std::endl;
     return r;
+    //return new str(rs.c_str());
 }
 
 const char *__mod5(list<pyobj *> *vals, str *sep) {
