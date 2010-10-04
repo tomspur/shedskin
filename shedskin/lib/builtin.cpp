@@ -839,7 +839,7 @@ str *str::__add__(str *b) {
     return s;
 }
 
-str *str::__add__(const char *b) {
+str *str::__add__(char *b) {
     char *buffer = new char[unit.size() + strlen(b)];
     sprintf(buffer, "%s%s", unit.c_str(), b);
     str *s = new str(b);
@@ -1846,6 +1846,35 @@ template<class T> str *do_asprintf(const char *fmt, T t, pyobj *a1, pyobj *a2) {
     return r;
 }
 
+void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2, int &j) {
+    char c;
+    int i = (*fmt)->unit.find('%');
+    str *add;
+
+    c = (*fmt)->unit[j];
+    if(c == 's' or c == 'r') {
+        if(c == 's') add = __str(t);
+        else add = repr(t);
+        (*fmt)->unit[j] = 's';
+        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), add->unit.c_str(), a1, a2);
+    } else if(t->__class__ == cl_int_) {
+#ifdef __SS_LONG
+        add = do_asprintf(((*fmt)->unit.substr(i, j-i)+__GC_STRING("ll")+(*fmt)->unit[j]).c_str(), ((int_ *)t)->unit, a1, a2);
+#else
+        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), ((int_ *)t)->unit, a1, a2);
+#endif
+    } else { /* cl_float_ */
+        if(c == 'H') {
+            (*fmt)->unit.replace(j, 1, ".12g");
+            j += 3;
+        }
+        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), ((float_ *)t)->unit, a1, a2);
+        if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
+            add->unit += ".0";
+    }
+    *s = (*s)->__add__(add);
+}
+
 pyobj *modgetitem(list<pyobj *> *vals, int i) {
     if(i==len(vals))
         throw new TypeError(new str("not enough arguments for format string"));
@@ -1855,7 +1884,6 @@ pyobj *modgetitem(list<pyobj *> *vals, int i) {
 str *__mod4(str *fmts, list<pyobj *> *vals) {
     int i, j;
     str *r = new str();
-    //std::string rs = std::string("");
     str *fmt = new str(fmts->unit);
     i = 0;
     while((j = __fmtpos(fmt)) != -1) {
@@ -1875,8 +1903,6 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             p = modgetitem(vals, i++);
 
         r = new str(r->unit + fmt->unit.substr(0, fmt->unit.find('%')));
-        //rs.append(fmt->unit.substr(0, fmt->unit.find('%')).c_str());
-        //std::cout << "rstest " << rs << " , " << r->unit.c_str() << std::endl;
         int i_fmtpos = __fmtpos(fmt);
         int i_pos = fmt->unit.find('%');
         str *add;
@@ -1885,10 +1911,10 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         switch(c) {
             case 'c':
                 r = r->__add__(__str(mod_to_c2(p)));
-                //rs.append(mod_to_c2(p)->unit.c_str());
                 break;
             case 's':
             case 'r':
+#if 0
                 if(c == 's') {
                     add = __str(p);
                 } else {
@@ -1905,6 +1931,8 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 r = r->__add__(new str(c_add));
                 delete c_add;
                 fmt->unit[j] = 's';
+#endif
+                __modfill(&fmt, p, &r, a1, a2, i_fmtpos);
                 break;
             case 'd':
             case 'i':
@@ -1947,9 +1975,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 delete c_add;
                 break;
             case '%':
-                r = r->__add__((char *)"%");
-                //rs.append((char *)"%");
-                //std::cout << "rstest% " << rs << " , " << r->unit.c_str() << std::endl;
+                r = r->__add__(new str("%"));
                 break;
             default:
                 throw new ValueError(new str("unsupported format character"));
@@ -1960,10 +1986,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         throw new TypeError(new str("not all arguments converted during string formatting"));
 
     r->unit += fmt->unit;
-    //rs.append(fmt->unit.c_str());
-    //std::cout << "rs " << rs << std::endl;
     return r;
-    //return new str(rs.c_str());
 }
 
 const char *__mod5(list<pyobj *> *vals, str *sep) {
