@@ -2174,6 +2174,7 @@ void print2(file *f, int comma, int n, ...) {
     } else {
         printf("%s", output);
     }
+    delete output;
 }
 
 /* str, file iteration */
