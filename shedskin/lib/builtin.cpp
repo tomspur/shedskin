@@ -1858,7 +1858,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
     str *fmt = new str(fmts->unit);
     i = 0;
     while((j = __fmtpos(fmt)) != -1) {
-        pyobj *p, *a1, *a2;
+        pyobj *a1, *a2;
 
         int asterisks = std::count(fmt->unit.begin(), fmt->unit.begin()+j, '*');
         a1 = a2 = NULL;
@@ -1869,10 +1869,6 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             a2 = modgetitem(vals, i++);
         }
 
-        char c = fmt->unit[j];
-        if(c != '%')
-            p = modgetitem(vals, i++);
-
         r = new str(r->unit + fmt->unit.substr(0, fmt->unit.find('%')));
         int i_fmtpos = __fmtpos(fmt);
         int i_pos = fmt->unit.find('%');
@@ -1880,15 +1876,15 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         char *c_add;
         pyobj *t;
         bool s_bool = false;
-        switch(c) {
+        switch(fmt->unit[j]) {
             case 'c':
-                r = r->__add__(__str(mod_to_c2(p)));
+                r = r->__add__(__str(mod_to_c2(modgetitem(vals, i++))));
                 break;
             case 's':
                 s_bool = true;
             case 'r':
-                if(s_bool) add = __str(p);
-                else add = repr(p);
+                if(s_bool) add = __str(modgetitem(vals, i++));
+                else add = repr(modgetitem(vals, i++));
                 fmt->unit[i_fmtpos] = 's';
                 if (asterisks == 2)
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)), add->unit.c_str());
@@ -1907,7 +1903,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'u':
             case 'x':
             case 'X':
-                t = mod_to_int(p);
+                t = mod_to_int(modgetitem(vals, i++));
 #ifdef __SS_LONG
                 add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)+__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(), ((int_ *)t)->unit, a1, a2);
                 r = r->__add__(add);
@@ -1925,7 +1921,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'F':
             case 'g':
             case 'G':
-                t = mod_to_float(p);
+                t = mod_to_float(modgetitem(vals, i++));
                 if (asterisks == 2)
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)), ((float_ *)t)->unit);
                 else if (asterisks == 1)
@@ -1936,7 +1932,10 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 add = new str(c_add);
                 //r = r->__add__(c_add);
                 //r = r->__add__((char *)".0");
-                if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
+
+                // TODO c = fmt->unit[j] could maybe optimized
+                //if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
+                if(fmt->unit[j] == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
                     add->unit += ".0";
                 r = r->__add__(add);
                 delete c_add;
