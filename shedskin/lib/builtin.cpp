@@ -1869,13 +1869,34 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         str *add;
         char *c_add;
         pyobj *t;
-        bool s_bool = false;
         switch(fmt->unit[j]) {
             case 'c':
                 r = r->__add__(__str(mod_to_c2(modgetitem(vals, i++))));
                 break;
             case 's':
-                s_bool = true;
+                fmt->unit[i_fmtpos] = 's';
+                if (asterisks == 2) {
+                    a1 = modgetitem(vals, i);
+                    a2 = modgetitem(vals, i+1);
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                             ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)),
+                              __str(modgetitem(vals, i+2))->unit.c_str());
+                    i += 3;
+                } else if (asterisks == 1) {
+                    a1 = modgetitem(vals, i);
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                             ((int)(((int_ *)a1)->unit)),
+                             __str(modgetitem(vals, i+1))->unit.c_str());
+                    i += 2;
+                } else {
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                             __str(modgetitem(vals, i++))->unit.c_str());
+                }
+
+                //TODO avoid the next string
+                r = r->__add__(new str(c_add));
+                delete c_add;
+                break;
             case 'r':
                 fmt->unit[i_fmtpos] = 's';
                 if (asterisks == 2) {
@@ -1883,20 +1904,17 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                     a2 = modgetitem(vals, i+1);
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
                              ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)),
-                             s_bool ? __str(modgetitem(vals, i+2))->unit.c_str()
-                                    : repr(modgetitem(vals, i+2))->unit.c_str());
+                             repr(modgetitem(vals, i+2))->unit.c_str());
                     i += 3;
                 } else if (asterisks == 1) {
                     a1 = modgetitem(vals, i);
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
                              ((int)(((int_ *)a1)->unit)),
-                             s_bool ? __str(modgetitem(vals, i+1))->unit.c_str()
-                                    : repr(modgetitem(vals, i+1))->unit.c_str());
+                             repr(modgetitem(vals, i+1))->unit.c_str());
                     i += 2;
                 } else {
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             s_bool ? __str(modgetitem(vals, i++))->unit.c_str()
-                                    : repr(modgetitem(vals, i++))->unit.c_str());
+                             repr(modgetitem(vals, i++))->unit.c_str());
                 }
 
                 //TODO avoid the next string
