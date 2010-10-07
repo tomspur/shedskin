@@ -1831,21 +1831,6 @@ int __fmtpos2(str *fmt) {
     return -1;
 }
 
-template<class T> str *do_asprintf(const char *fmt, T t, pyobj *a1, pyobj *a2) {
-    char *d;
-    int x;
-    str *r;
-    if(a2)
-        x = asprintf(&d, fmt, ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)), t);
-    else if(a1)
-        x = asprintf(&d, fmt, ((int)(((int_ *)a1)->unit)), t);
-    else
-        x = asprintf(&d, fmt, t);
-    r = new str(d);
-    free(d);
-    return r;
-}
-
 pyobj *modgetitem(list<pyobj *> *vals, int i) {
     if(i==len(vals))
         throw new TypeError(new str("not enough arguments for format string"));
@@ -1922,43 +1907,46 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'X':
                 if(asterisks==1) {
 #ifdef __SS_LONG
-                    add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)
-                                       +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
-                                      ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit,
-                                      modgetitem(vals, i), NULL);
-                    r = r->__add__(add);
+                    asprintf(&c_add, (fmt->unit.substr(i_pos, i_fmtpos-i_pos)
+                              +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
+                             modgetitem(vals, i),
+                             ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit);
+                    r = r->__add__(new str(c_add));
 #else
-                    add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                                      ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit,
-                                      modgetitem(vals, i), NULL);
-                    r = r->__add__(add);
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                             modgetitem(vals, i),
+                             ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit);
+                    r = r->__add__(new str(c_add));
 #endif
+                    delete c_add;
                     i += 2;
                 } else if(asterisks==2) {
 #ifdef __SS_LONG
-                    add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)
-                                       +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
-                                      ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit,
-                                      modgetitem(vals, i), modgetitem(vals, i+1));
-                    r = r->__add__(add);
+                    asprintf(&c_add, (fmt->unit.substr(i_pos, i_fmtpos-i_pos)
+                              +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
+                             modgetitem(vals, i), modgetitem(vals, i+1),
+                             ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit);
+                    r = r->__add__(new str(c_add));
 #else
-                    add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                                      ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit,
-                                      modgetitem(vals, i), modgetitem(vals, i+1));
-                    r = r->__add__(add);
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                             modgetitem(vals, i), modgetitem(vals, i+1),
+                             ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit);
+                    r = r->__add__(new str(c_add));
 #endif
+                    delete c_add;
                     i += 3;
                 } else {
 #ifdef __SS_LONG
-                    add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)
-                                       +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
-                                      ((int_ *)mod_to_int(modgetitem(vals, i++)))->unit, NULL, NULL);
-                    r = r->__add__(add);
+                    asprintf(&c_add, (fmt->unit.substr(i_pos, i_fmtpos-i_pos)
+                              +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
+                             ((int_ *)mod_to_int(modgetitem(vals, i++)))->unit);
+                    r = r->__add__(new str(c_add));
 #else
-                    add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                                      ((int_ *)mod_to_int(modgetitem(vals, i++)))->unit, NULL, NULL);
-                    r = r->__add__(add);
+                    asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                             ((int_ *)mod_to_int(modgetitem(vals, i++)))->unit);
+                    r = r->__add__(new str(c_add));
 #endif
+                    delete c_add;
                 }
                 break;
             case 'H':
