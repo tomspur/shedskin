@@ -1846,35 +1846,6 @@ template<class T> str *do_asprintf(const char *fmt, T t, pyobj *a1, pyobj *a2) {
     return r;
 }
 
-void __modfill(str **fmt, pyobj *t, str **s, pyobj *a1, pyobj *a2, int &j) {
-    char c;
-    int i = (*fmt)->unit.find('%');
-    str *add;
-
-    c = (*fmt)->unit[j];
-    if(c == 's' or c == 'r') {
-        if(c == 's') add = __str(t);
-        else add = repr(t);
-        (*fmt)->unit[j] = 's';
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), add->unit.c_str(), a1, a2);
-    } else if(t->__class__ == cl_int_) {
-#ifdef __SS_LONG
-        add = do_asprintf(((*fmt)->unit.substr(i, j-i)+__GC_STRING("ll")+(*fmt)->unit[j]).c_str(), ((int_ *)t)->unit, a1, a2);
-#else
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), ((int_ *)t)->unit, a1, a2);
-#endif
-    } else { /* cl_float_ */
-        if(c == 'H') {
-            (*fmt)->unit.replace(j, 1, ".12g");
-            j += 3;
-        }
-        add = do_asprintf((*fmt)->unit.substr(i, j+1-i).c_str(), ((float_ *)t)->unit, a1, a2);
-        if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
-            add->unit += ".0";
-    }
-    *s = (*s)->__add__(add);
-}
-
 pyobj *modgetitem(list<pyobj *> *vals, int i) {
     if(i==len(vals))
         throw new TypeError(new str("not enough arguments for format string"));
@@ -1908,18 +1879,17 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         str *add;
         char *c_add;
         pyobj *t;
+        bool s_bool = false;
         switch(c) {
             case 'c':
                 r = r->__add__(__str(mod_to_c2(p)));
                 break;
             case 's':
+                s_bool = true;
             case 'r':
-#if 0
-                if(c == 's') {
-                    add = __str(p);
-                } else {
-                    add = repr(p);
-                }
+                if(s_bool) add = __str(p);
+                else add = repr(p);
+                fmt->unit[i_fmtpos] = 's';
                 if (asterisks == 2)
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(), ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)), add->unit.c_str());
                 else if (asterisks == 1)
@@ -1930,9 +1900,6 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 //TODO avoid the next string
                 r = r->__add__(new str(c_add));
                 delete c_add;
-                fmt->unit[j] = 's';
-#endif
-                __modfill(&fmt, p, &r, a1, a2, i_fmtpos);
                 break;
             case 'd':
             case 'i':
