@@ -1858,10 +1858,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
     str *fmt = new str(fmts->unit);
     i = 0;
     while((j = __fmtpos(fmt)) != -1) {
-        pyobj *a1, *a2;
-
         int asterisks = std::count(fmt->unit.begin(), fmt->unit.begin()+j, '*');
-        a1 = a2 = NULL;
 
         r = new str(r->unit + fmt->unit.substr(0, fmt->unit.find('%')));
         int i_fmtpos = __fmtpos(fmt);
@@ -1924,23 +1921,45 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'x':
             case 'X':
                 if(asterisks==1) {
-                    a1 = modgetitem(vals, i);
-                    i += 1;
-                } else if(asterisks==2) {
-                    a1 = modgetitem(vals, i);
-                    a2 = modgetitem(vals, i+1);
-                    i += 2;
-                }
 #ifdef __SS_LONG
-                add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)
-                                   +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
-                                  ((int_ *)mod_to_int(modgetitem(vals, i++)))->unit, a1, a2);
-                r = r->__add__(add);
+                    add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)
+                                       +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
+                                      ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit,
+                                      modgetitem(vals, i), NULL);
+                    r = r->__add__(add);
 #else
-                add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                                  ((int_ *)mod_to_int(modgetitem(vals, i++)))->unit, a1, a2);
-                r = r->__add__(add);
+                    add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                                      ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit,
+                                      modgetitem(vals, i), NULL);
+                    r = r->__add__(add);
 #endif
+                    i += 2;
+                } else if(asterisks==2) {
+#ifdef __SS_LONG
+                    add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)
+                                       +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
+                                      ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit,
+                                      modgetitem(vals, i), modgetitem(vals, i+1));
+                    r = r->__add__(add);
+#else
+                    add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                                      ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit,
+                                      modgetitem(vals, i), modgetitem(vals, i+1));
+                    r = r->__add__(add);
+#endif
+                    i += 3;
+                } else {
+#ifdef __SS_LONG
+                    add = do_asprintf((fmt->unit.substr(i_pos, i_fmtpos-i_pos)
+                                       +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
+                                      ((int_ *)mod_to_int(modgetitem(vals, i++)))->unit, NULL, NULL);
+                    r = r->__add__(add);
+#else
+                    add = do_asprintf(fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
+                                      ((int_ *)mod_to_int(modgetitem(vals, i++)))->unit, NULL, NULL);
+                    r = r->__add__(add);
+#endif
+                }
                 break;
             case 'H':
                 fmt->unit.replace(i_fmtpos, 1, ".12g");
