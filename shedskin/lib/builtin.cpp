@@ -1876,16 +1876,14 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 's':
                 fmt->unit[i_fmtpos] = 's';
                 if (asterisks == 2) {
-                    a1 = modgetitem(vals, i);
-                    a2 = modgetitem(vals, i+1);
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i+1))->unit)),
                               __str(modgetitem(vals, i+2))->unit.c_str());
                     i += 3;
                 } else if (asterisks == 1) {
-                    a1 = modgetitem(vals, i);
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             ((int)(((int_ *)a1)->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
                              __str(modgetitem(vals, i+1))->unit.c_str());
                     i += 2;
                 } else {
@@ -1900,16 +1898,14 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'r':
                 fmt->unit[i_fmtpos] = 's';
                 if (asterisks == 2) {
-                    a1 = modgetitem(vals, i);
-                    a2 = modgetitem(vals, i+1);
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             ((int)(((int_ *)a1)->unit)), ((int)(((int_ *)a2)->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i+1))->unit)),
                              repr(modgetitem(vals, i+2))->unit.c_str());
                     i += 3;
                 } else if (asterisks == 1) {
-                    a1 = modgetitem(vals, i);
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             ((int)(((int_ *)a1)->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
                              repr(modgetitem(vals, i+1))->unit.c_str());
                     i += 2;
                 } else {
@@ -1928,7 +1924,8 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'x':
             case 'X':
                 if(asterisks==1) {
-                    a1 = modgetitem(vals, i++);
+                    a1 = modgetitem(vals, i);
+                    i += 1;
                 } else if(asterisks==2) {
                     a1 = modgetitem(vals, i);
                     a2 = modgetitem(vals, i+1);
@@ -1955,18 +1952,15 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
             case 'g':
             case 'G':
                 if (asterisks == 2) {
-                    a1 = modgetitem(vals, i);
-                    a2 = modgetitem(vals, i+1);
                     t = mod_to_float(modgetitem(vals, i+2));
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             ((int)(((int_ *)a1)->unit)),
-                             ((int)(((int_ *)a2)->unit)), ((float_ *)t)->unit);
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i+1))->unit)), ((float_ *)t)->unit);
                     i += 3;
                 } else if (asterisks == 1) {
-                    a1 = modgetitem(vals, i);
                     t = mod_to_float(modgetitem(vals, i+1));
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             ((int)(((int_ *)a1)->unit)), ((float_ *)t)->unit);
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)), ((float_ *)t)->unit);
                     i += 2;
                 } else {
                     t = mod_to_float(modgetitem(vals, i++));
