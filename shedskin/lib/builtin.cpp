@@ -1909,12 +1909,12 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
 #ifdef __SS_LONG
                     asprintf(&c_add, (fmt->unit.substr(i_pos, i_fmtpos-i_pos)
                               +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
-                             modgetitem(vals, i),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
                              ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit);
                     r = r->__add__(new str(c_add));
 #else
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             modgetitem(vals, i),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
                              ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit);
                     r = r->__add__(new str(c_add));
 #endif
@@ -1924,12 +1924,14 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
 #ifdef __SS_LONG
                     asprintf(&c_add, (fmt->unit.substr(i_pos, i_fmtpos-i_pos)
                               +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
-                             modgetitem(vals, i), modgetitem(vals, i+1),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i+1))->unit)),
                              ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit);
                     r = r->__add__(new str(c_add));
 #else
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             modgetitem(vals, i), modgetitem(vals, i+1),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i+1))->unit)),
                              ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit);
                     r = r->__add__(new str(c_add));
 #endif
