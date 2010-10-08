@@ -1851,6 +1851,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         str *add;
         char *c_add;
         pyobj *t;
+        bool H_bool = false;
         switch(fmt->unit[j]) {
             case 'c':
                 r = r->__add__(__str(mod_to_c2(modgetitem(vals, i++))));
@@ -1909,12 +1910,12 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
 #ifdef __SS_LONG
                     asprintf(&c_add, (fmt->unit.substr(i_pos, i_fmtpos-i_pos)
                               +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
-                             modgetitem(vals, i),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
                              ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit);
                     r = r->__add__(new str(c_add));
 #else
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             modgetitem(vals, i),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
                              ((int_ *)mod_to_int(modgetitem(vals, i+1)))->unit);
                     r = r->__add__(new str(c_add));
 #endif
@@ -1924,12 +1925,14 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
 #ifdef __SS_LONG
                     asprintf(&c_add, (fmt->unit.substr(i_pos, i_fmtpos-i_pos)
                               +__GC_STRING("ll")+fmt->unit[i_fmtpos]).c_str(),
-                             modgetitem(vals, i), modgetitem(vals, i+1),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i+1))->unit)),
                              ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit);
                     r = r->__add__(new str(c_add));
 #else
                     asprintf(&c_add, fmt->unit.substr(i_pos, i_fmtpos+1-i_pos).c_str(),
-                             modgetitem(vals, i), modgetitem(vals, i+1),
+                             ((int)(((int_ *)modgetitem(vals, i))->unit)),
+                             ((int)(((int_ *)modgetitem(vals, i+1))->unit)),
                              ((int_ *)mod_to_int(modgetitem(vals, i+2)))->unit);
                     r = r->__add__(new str(c_add));
 #endif
@@ -1950,6 +1953,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 }
                 break;
             case 'H':
+                H_bool = true;
                 fmt->unit.replace(i_fmtpos, 1, ".12g");
                 i_fmtpos += 3;
             case 'e':
@@ -1979,10 +1983,10 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 //r = r->__add__(c_add);
                 //r = r->__add__((char *)".0");
 
-                // TODO c = fmt->unit[j] could maybe optimized
-                //if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
-                if(fmt->unit[j] == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
+                if(H_bool &&
+                   ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0) {
                     add->unit += ".0";
+                }
                 r = r->__add__(add);
                 delete c_add;
                 break;
@@ -2005,14 +2009,15 @@ const char *__mod5(list<pyobj *> *vals, str *sep) {
     __mod5_cache->units.resize(0);
     for(int i=0;i<len(vals);i++) {
         pyobj *p = vals->__getitem__(i);
-        if(p == NULL)
+        if(p == NULL) {
             __mod5_cache->append(__fmt_s);
-        else if(p->__class__ == cl_float_)
+        } else if(p->__class__ == cl_float_) {
             __mod5_cache->append(__fmt_H);
-        else if(p->__class__== cl_int_)
+        } else if(p->__class__== cl_int_) {
             __mod5_cache->append(__fmt_d);
-        else
+        } else {
             __mod5_cache->append(__fmt_s);
+        }
     }
     return __mod4(sep->join(__mod5_cache), vals)->unit.c_str();
 }
