@@ -1981,8 +1981,9 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
 
                 // TODO c = fmt->unit[j] could maybe optimized
                 //if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
-                if(fmt->unit[j] == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
+                if(((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0) {
                     add->unit += ".0";
+                }
                 r = r->__add__(add);
                 delete c_add;
                 break;
