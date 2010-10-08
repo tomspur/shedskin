@@ -12,7 +12,7 @@ namespace __shedskin__ {
 
 class_ *cl_class_, *cl_none, *cl_str_, *cl_int_, *cl_float_, *cl_complex, *cl_list, *cl_tuple, *cl_dict, *cl_set, *cl_object, *cl_rangeiter, *cl_xrange;
 
-str *sp, *nl, *__fmt_s, *__fmt_G, *__fmt_d;
+str *sp, *nl, *__fmt_s, *__fmt_H, *__fmt_d;
 __GC_STRING ws, __fmtchars;
 __GC_VECTOR(str *) __char_cache;
 
@@ -57,7 +57,7 @@ void __init() {
     sp = new str(" ");
     nl = new str("\n");
     __fmt_s = new str("%s");
-    __fmt_G = new str("%G");
+    __fmt_H = new str("%H");
     __fmt_d = new str("%d");
 
     for(int i=0;i<256;i++) {
@@ -1851,6 +1851,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
         str *add;
         char *c_add;
         pyobj *t;
+        bool H_bool = false;
         switch(fmt->unit[j]) {
             case 'c':
                 r = r->__add__(__str(mod_to_c2(modgetitem(vals, i++))));
@@ -1952,6 +1953,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 }
                 break;
             case 'H':
+                H_bool = true;
                 fmt->unit.replace(i_fmtpos, 1, ".12g");
                 i_fmtpos += 3;
             case 'e':
@@ -1981,12 +1983,7 @@ str *__mod4(str *fmts, list<pyobj *> *vals) {
                 //r = r->__add__(c_add);
                 //r = r->__add__((char *)".0");
 
-                // TODO c = fmt->unit[j] could maybe optimized
-                //if(c == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0)
-                //std::cout << ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) << " here " << (((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0) << " " << fmt->unit[i_fmtpos] << std::endl;
-                //if(fmt->unit[i_fmtpos] == 'H' && ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0) {
-                if(fmt->unit[i_fmtpos] != 'f' &&
-                   fmt->unit[i_fmtpos] != 'g' &&
+                if(H_bool &&
                    ((float_ *)t)->unit-((int)(((float_ *)t)->unit)) == 0) {
                     add->unit += ".0";
                 }
@@ -2015,7 +2012,7 @@ const char *__mod5(list<pyobj *> *vals, str *sep) {
         if(p == NULL) {
             __mod5_cache->append(__fmt_s);
         } else if(p->__class__ == cl_float_) {
-            __mod5_cache->append(__fmt_G);
+            __mod5_cache->append(__fmt_H);
         } else if(p->__class__== cl_int_) {
             __mod5_cache->append(__fmt_d);
         } else {
