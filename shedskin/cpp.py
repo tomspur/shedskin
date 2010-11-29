@@ -1509,8 +1509,15 @@ class generateVisitor(ASTVisitor):
 
         if mod: self.visitm('__power(', left, ', ', right, ', ', mod, ')', func)
         else:
-            if self.mergeinh[left].intersection(set([(defclass('int_'),0),(defclass('float_'),0)])) and isinstance(right, Const) and type(right.value) == int and right.value in [2,3]:
-                self.visitm(('__power%d(' % int(right.value)), left, ')', func)
+            if (self.mergeinh[left].intersection(set([(defclass('int_'),0),
+                    (defclass('float_'),0)]))
+                    and isinstance(right, Const)
+                    and type(right.value) == int):
+                # unpack power for constant int R-value
+                for i in range(right.value-1):
+                    self.visit(left)
+                    self.append('*')
+                self.visit(left)
             else:
                 self.visitm('__power(', left, ', ', right, ')', func)
 

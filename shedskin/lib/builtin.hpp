@@ -4603,11 +4603,6 @@ __ss_int __power(__ss_int a, __ss_int b, __ss_int c);
 #endif
 int __power(int a, int b, int c);
 
-inline __ss_int __power2(__ss_int a) { return a*a; }
-inline double __power2(double a) { return a*a; }
-inline __ss_int __power3(__ss_int a) { return a*a*a; }
-inline double __power3(double a) { return a*a*a; }
-
 /* division */
 
 template<class A, class B> double __divs(A a, B b);
