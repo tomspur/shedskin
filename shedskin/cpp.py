@@ -153,6 +153,13 @@ class generateVisitor(ASTVisitor):
         if self.line.strip():
             print >>self.out, self.line+';'
 
+    def visitstr(self, node, func):
+        length = len(self.line)
+        self.visit(node, func)
+        ret = self.line[length:]
+        self.line = self.line[:length]
+        return ret
+
     def indent(self):
         self.indentation += 4*' '
     def deindent(self):
@@ -947,35 +954,31 @@ class generateVisitor(ASTVisitor):
     def fastfor(self, node, assname, func=None):
         # --- for i in range(..) -> for( i=l, u=expr; i < u; i++ ) ..
         ivar, evar = getmv().tempcount[node.assign], getmv().tempcount[node.list]
-        self.start('FAST_FOR(%s,' % assname)
+
+        def get_args_str(i):
+            if node.list.args[i] in getmv().tempcount: # XXX in visit?
+                return getmv().tempcount[node.list.args[i]]
+            else:
+                return self.visitstr(node.list.args[i], func)
 
         if len(node.list.args) == 1:
-            self.append('0,')
-            if node.list.args[0] in getmv().tempcount: # XXX in visit?
-                self.append(getmv().tempcount[node.list.args[0]])
-            else:
-                self.visit(node.list.args[0], func)
-            self.append(',')
+            self.start('for(%s = 0; %s < ' % (assname,assname))
+            self.append(get_args_str(0))
+            self.append('; ++%s) {' % assname)
+        elif len(node.list.args) == 2:
+            self.start('for(%s = ' % assname)
+            self.append(get_args_str(0))
+            self.append('; %s < ' % assname)
+            self.append(get_args_str(1))
+            self.append('; ++%s) {' % assname)
         else:
-            if node.list.args[0] in getmv().tempcount: # XXX in visit?
-                self.append(getmv().tempcount[node.list.args[0]])
-            else:
-                self.visit(node.list.args[0], func)
+            self.start('FAST_FOR(%s,' % assname)
+            self.append(get_args_str(0))
             self.append(',')
-            if node.list.args[1] in getmv().tempcount: # XXX in visit?
-                self.append(getmv().tempcount[node.list.args[1]])
-            else:
-                self.visit(node.list.args[1], func)
+            self.append(get_args_str(1))
             self.append(',')
-
-        if len(node.list.args) != 3:
-            self.append('1')
-        else:
-            if node.list.args[2] in getmv().tempcount: # XXX in visit?
-                self.append(getmv().tempcount[node.list.args[2]])
-            else:
-                self.visit(node.list.args[2], func)
-        self.append(',%s,%s)' % (ivar[2:],evar[2:]))
+            self.append(get_args_str(2))
+            self.append(',%s,%s)' % (ivar[2:],evar[2:])) # XXX evar is not used here
         print >>self.out, self.line
 
     def fastenum(self, node):
