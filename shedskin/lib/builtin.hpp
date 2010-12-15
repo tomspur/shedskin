@@ -1457,11 +1457,13 @@ static void __throw_stop_iteration() {
     throw new StopIteration();
 }
 
-#define FOR_RANGE(i, u) \
-    for(i = 0; i < u; ++i) {
+#define FOR_RANGE(i, u, tmp) \
+    __ ## tmp = u; \
+    for(i = 0; i < __ ## tmp; ++i) {
 
-#define FOR_RANGE2(i, l, u) \
-    for(i = l; i < u; ++i) {
+#define FOR_RANGE2(i, l, u, tmp) \
+    __ ## tmp = u; \
+    for(i = l; i < __ ## tmp; ++i) {
 
 #define FAST_FOR(i, l, u, s, t1, t2) \
     if(s==0) \

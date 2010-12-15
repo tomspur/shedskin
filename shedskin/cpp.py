@@ -29,6 +29,7 @@ class generateVisitor(ASTVisitor):
         self.filling_consts = False
         self.with_count = 0
         self.bool_wrapper = {}
+        self.line = ''
 
     def insert_consts(self, declare): # XXX ugly
         if not self.consts: return
@@ -961,15 +962,16 @@ class generateVisitor(ASTVisitor):
                 return self.visitstr(node.list.args[i], func)
 
         #TODO: delete unused variables
+        ivar, evar = getmv().tempcount[node.assign], getmv().tempcount[node.list]
+
         if len(node.list.args) == 1:
-            self.start('FOR_RANGE(%s, ' % assname)
-            self.append(get_args_str(0))
-            self.append(')')
+            self.start('FOR_RANGE(%s, %s, %s)' %
+                (assname, get_args_str(0), ivar[2:]))
         elif len(node.list.args) == 2:
-            self.start('FOR_RANGE2(%s, %s, %s)' %
-                (assname, get_args_str(0), get_args_str(1)))
+            self.start('FOR_RANGE2(%s, %s, %s, %s)' %
+                (assname, get_args_str(0), get_args_str(1),
+                 ivar[2:]))
         else:
-            ivar, evar = getmv().tempcount[node.assign], getmv().tempcount[node.list]
             self.start('FAST_FOR(%s, %s, %s, %s, %s, %s)' %
                 (assname, get_args_str(0), get_args_str(1),
                  get_args_str(2), ivar[2:], evar[2:]))
