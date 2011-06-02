@@ -14,8 +14,13 @@ class run_tests(Command):
         ss_dir.append('tests')
         self.tests_dir = os.path.sep.join(ss_dir)
     def run(self):
+        import signal
         os.chdir(self.tests_dir)
-        os.system('./run.py')
+        p = subprocess.Popen('./run.py -r', shell=True)
+        def kill_tests(a,b):
+            p.terminate()
+        signal.signal(signal.SIGINT, kill_tests)
+        p.wait()
         os.chdir(self.cwd)
 
 setup(name='shedskin',
