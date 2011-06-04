@@ -860,6 +860,10 @@ class generateVisitor(ASTVisitor):
         for arg in args[:-1]:
             if isinstance(arg, str):
                 self.append(arg)
+            elif isinstance(arg, Getattr) and (arg.asList()[1] == "real" or arg.asList()[1] == "imag"):
+                #TODO Is there a better place for this? When using complex numbers transform a->imag to a->imag()
+                self.visit(arg, func)
+                self.append("()")
             else:
                 self.visit(arg, func)
 

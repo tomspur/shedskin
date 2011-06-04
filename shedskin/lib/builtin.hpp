@@ -8,6 +8,7 @@
 #include <gc/gc_allocator.h>
 #include <gc/gc_cpp.h>
 
+#include <complex>
 #include <vector>
 #include <deque>
 #include <string>
@@ -711,11 +712,19 @@ public:
 
 class complex : public pyobj {
 public:
-    double real, imag;
+    std::complex<double> unit;
 
     complex(double real=0.0, double imag=0.0);
     template<class T> complex(T t);
     complex(str *s);
+    complex(std::complex<double> b);
+
+    double real();
+    double imag();
+    double real(std::complex<double>);
+    double imag(std::complex<double>);
+    double real(complex *);
+    double imag(complex *);
 
     complex *__add__(complex *b);
     complex *__add__(double b);
@@ -4934,8 +4943,7 @@ template<> inline str *bin(__ss_int i) {
 
 template<class T> complex::complex(T t) {
     __class__ = cl_complex;
-    real = __float(t);
-    imag = 0;
+    unit = std::complex<double>(__float(t), 0);
 }
 
 #ifdef __SS_BIND

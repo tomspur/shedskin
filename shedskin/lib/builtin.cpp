@@ -149,8 +149,7 @@ __ss_int bool_::__index__() {
 
 complex::complex(double real, double imag) {
     this->__class__ = cl_complex;
-    this->real = real;
-    this->imag = imag;
+    this->unit = std::complex<double>(real, imag);
 }
 
 complex::complex(str *s) {
@@ -162,22 +161,48 @@ complex::complex(str *s) {
     m = p->match(s->strip());
     if (___bool(m)) {
         complex *c = (parsevalue(m->group(1, new str("one"))))->__add__(parsevalue(m->group(1, new str("two"))));
-        real = c->real;
-        imag = c->imag;
+        unit = std::complex<double>(c->unit);
     }
     else {
         throw ((new ValueError(new str("complex() arg is a malformed string"))));
     }
 }
 
+complex::complex(std::complex<double> b) {
+    this->unit = b;
+}
+
+double complex::real() {
+    return std::real(unit);
+}
+
+double complex::imag() {
+    return std::imag(unit);
+}
+
+double complex::real(complex *b) {
+    return std::real(b->unit);
+}
+
+double complex::imag(complex *b) {
+    return std::imag(b->unit);
+}
+
+double complex::real(std::complex<double> b) {
+    return std::real(b);
+}
+
+double complex::imag(std::complex<double> b) {
+    return std::imag(b);
+}
+
 #ifdef __SS_BIND
 complex::complex(PyObject *p) {
     this->__class__ = cl_complex;
-    real = PyComplex_RealAsDouble(p);
-    imag = PyComplex_ImagAsDouble(p);
+    unit = std::complex<double>(PyComplex_RealAsDouble(p), PyComplex_ImagAsDouble(p));
 }
 PyObject *complex::__to_py__() {
-    return PyComplex_FromDoubles(real, imag);
+    return PyComplex_FromDoubles(real(unit), imag(unit));
 }
 #endif
 
@@ -198,60 +223,72 @@ complex *complex::parsevalue(str *s) {
     return __mul2(__float(s), mult);
 }
 
-complex *complex::__add__(complex *b) { return new complex(real+b->real, imag+b->imag); }
-complex *complex::__add__(double b) { return new complex(b+real, imag); }
+complex *complex::__add__(complex *b) {
+    return new complex(this->unit + b->unit);
+}
+complex *complex::__add__(double b) {
+    return new complex(this->unit + b);
+}
 complex *complex::__iadd__(complex *b) { return __add__(b); }
 complex *complex::__iadd__(double b) { return __add__(b); }
 
-complex *complex::__sub__(complex *b) { return new complex(real-b->real, imag-b->imag); }
-complex *complex::__sub__(double b) { return new complex(real-b, imag); }
-complex *complex::__rsub__(double b) { return new complex(b-real, -imag); }
+complex *complex::__sub__(complex *b) {
+    return new complex(this->unit - b->unit);
+}
+complex *complex::__sub__(double b) {
+    return new complex(this->unit - b);
+}
+complex *complex::__rsub__(double b) { return new complex(b-real(unit), -imag(unit)); }
 complex *complex::__isub__(complex *b) { return __sub__(b); }
 complex *complex::__isub__(double b) { return __sub__(b); }
 
-complex *complex::__mul__(complex *b) { return new complex(real*b->real-imag*b->imag, real*b->imag+imag*b->real); }
-complex *complex::__mul__(double b) { return new complex(b*real, b*imag); }
+complex *complex::__mul__(complex *b) {
+    return new complex(this->unit * b->unit);
+}
+complex *complex::__mul__(double b) {
+    return new complex(this->unit * b);
+}
 complex *complex::__imul__(complex *b) { return __mul__(b); }
 complex *complex::__imul__(double b) { return __mul__(b); }
 
 void __complexdiv(complex *c, complex *a, complex *b) {
-    double norm = b->real*b->real+b->imag*b->imag;
-    c->real = (a->real*b->real+a->imag*b->imag)/norm;
-    c->imag = (a->imag*b->real-b->imag*a->real)/norm;
+    c->unit = a->unit / b->unit;
 }
 
 complex *complex::__div__(complex *b) { complex *c=new complex(); __complexdiv(c, this, b); return c; }
-complex *complex::__div__(double b) { return new complex(real/b, imag/b); }
+complex *complex::__div__(double b) {
+    complex *ret = new complex(this->unit);
+    ret->unit /= b;
+    return ret;
+}
 complex *complex::__idiv__(complex *b) { return __div__(b); }
 complex *complex::__idiv__(double b) { return __div__(b); }
 complex *complex::__rdiv__(double b) { complex *c=new complex(); __complexdiv(c, new complex(b), this); return c; }
 
-complex *complex::conjugate() { return new complex(real, -imag); }
+complex *complex::conjugate() { return new complex(conj(unit)); }
 complex *complex::__pos__() { return this; }
-complex *complex::__neg__() { return new complex(-real, -imag); }
-double complex::__abs__() { return std::sqrt(real*real+imag*imag); }
+complex *complex::__neg__() { return new complex(-unit); }
+double complex::__abs__() { return abs(unit); }
 double __abs(complex *c) { return c->__abs__(); }
 
 complex *complex::__floordiv__(complex *b) {
     complex *c = __div__(b);
-    c->real = ((__ss_int)c->real);
-    c->imag = 0;
+    c->unit = std::complex<double>((__ss_int)real(c->unit), 0);
     return c;
 }
 complex *complex::__floordiv__(double b) {
     complex *c = __div__(b);
-    c->real = ((__ss_int)c->real);
-    c->imag = 0;
+    c->unit = std::complex<double>((__ss_int)real(c->unit), 0);
     return c;
 }
 
 complex *complex::__mod__(complex *b) {
     complex *c = __div__(b);
-    return __sub__(b->__mul__(((__ss_int)c->real)));
+    return __sub__(b->__mul__(((__ss_int)real(c->unit))));
 }
 complex *complex::__mod__(double b) {
     complex *c = __div__(b);
-    return __sub__(b*((__ss_int)c->real));
+    return __sub__(b*((__ss_int)real(c->unit)));
 }
 
 tuple2<complex *, complex *> *complex::__divmod__(complex *b) {
@@ -264,27 +301,27 @@ tuple2<complex *, complex *> *complex::__divmod__(double b) {
 __ss_bool complex::__eq__(pyobj *p) {
     if(p->__class__ != cl_complex)
         return False;
-    return __mbool(real == ((complex *)p)->real && imag == ((complex *)p)->imag);
+    return __mbool(unit == ((complex *)p)->unit);
 }
 
 int complex::__hash__() {
-    return ((__ss_int)imag)*1000003+((__ss_int)real);
+    return ((__ss_int)imag(unit))*1000003+((__ss_int)real(unit));
 }
 
 __ss_bool complex::__nonzero__() {
-    return __mbool(real != 0 || imag != 0);
+    return __mbool(real(unit) != 0 || imag(unit) != 0);
 }
 
 str *complex::__repr__() {
     str *left, *middle, *right;
-    if(real==0)
-        return __modct(new str("%gj"), 1, ___box(imag));
-    left = __modct(new str("(%g"), 1, ___box(real));
-    if(imag<0)
+    if(real(unit)==0)
+        return __modct(new str("%gj"), 1, ___box(imag(unit)));
+    left = __modct(new str("(%g"), 1, ___box(real(unit)));
+    if(imag(unit)<0)
         middle = new str("");
     else
         middle = new str("+");
-    right = __modct(new str("%gj)"), 1, ___box(imag));
+    right = __modct(new str("%gj)"), 1, ___box(imag(unit)));
     return __add_strs(3, left, middle, right);
 }
 
@@ -1544,27 +1581,7 @@ template<> class_ *__type(double) { return cl_float_; }
 
 complex *__power(complex *a, complex *b) {
     complex *r = new complex();
-    double vabs, len, at, phase;
-    if(b->real == 0 && b->imag == 0) {
-        r->real = 1;
-        r->imag = 0;
-    }
-    else if(a->real == 0 && a->imag == 0) {
-        r->real = 0;
-        r->imag = 0;
-    }
-    else {
-        vabs = a->__abs__();
-        len = std::pow(vabs,b->real);
-        at = std::atan2(a->imag, a->real);
-        phase = at*b->real;
-        if (b->imag != 0.0) {
-            len /= std::exp(at*b->imag);
-            phase += b->imag*std::log(vabs);
-        }
-        r->real = len*std::cos(phase);
-        r->imag = len*std::sin(phase);
-    }
+    r->unit = a->unit * b->unit;
     return r;
 }
 complex *__power(complex *a, __ss_int b) {
