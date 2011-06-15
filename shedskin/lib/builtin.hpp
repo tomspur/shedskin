@@ -2023,7 +2023,6 @@ template <class K, class V> int characterize(dict<K,V> *a, dict<K,V> *b, V *pval
 	int i;
 	int difference_found = 0;
 	K akey;
-	V aval;
 	int cmp;
 
 	for (i = 0; i <= a->mask; i++) {
@@ -2050,11 +2049,10 @@ template <class K, class V> int characterize(dict<K,V> *a, dict<K,V> *b, V *pval
 		if (cmp != 0) {
 			difference_found = 1;
 			akey = thiskey;
-			aval = thisaval;
+			*pval = thisaval;
 		}
 	}
 
-	*pval = aval;
 	return difference_found;
 }
 
