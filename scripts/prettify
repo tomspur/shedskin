@@ -4,9 +4,13 @@
 CPPFILES=$(find shedskin/ -name "*.cpp")
 HPPFILES=$(find shedskin/ -name "*.hpp")
 
+echo Running astyle
 astyle \
     --style=google \
     --indent-switches \
     --keep-one-line-blocks \
     --pad-oper --pad-paren-in \
     $CPPFILES $HPPFILES
+
+echo Running autopep8
+autopep8 --in-place --recursive shedskin/
