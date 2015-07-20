@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Prettify C/C++ code according to defaults with astyle
+
+CPPFILES=$(find shedskin/ -name "*.cpp")
+HPPFILES=$(find shedskin/ -name "*.hpp")
+
+astyle \
+    --style=google \
+    --indent-switches \
+    --keep-one-line-blocks \
+    --pad-oper --pad-paren-in \
+    $CPPFILES $HPPFILES
